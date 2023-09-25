@@ -1,19 +1,31 @@
-import json
+import os
 import uuid
+from datetime import datetime
 
 import requests
 import streamlit as st
+from dotenv import load_dotenv
+
+load_dotenv()
 
 st.title("VZ Assistant")
+st.session_state["authenticated"] = False
 
 if "key" not in st.session_state:
     st.session_state["key"] = str(uuid.uuid4())
+
+if "starttime" not in st.session_state:
+    st.session_state["starttime"] = str(datetime.now())
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.write("Session ID: " + st.session_state["key"])
+st.write("Start Time: " + st.session_state["starttime"])
+passcode = st.text_input("Passcode")
 
+if passcode == os.getenv("PASSCODE"):
+    st.session_state["authenticated"] = True
 
 with st.expander("Feedback"):
     thumbs = st.radio(
@@ -25,8 +37,10 @@ with st.expander("Feedback"):
 
     feedback_text = st.text_input("Feedback")
 
-    st.button("Submit feedback")
-
+    if st.session_state['authenticated']:
+        st.button("Submit feedback")
+    else:
+        st.button("Submit feedback", disabled=True)
 
 # Messages container
 with st.container():
@@ -48,20 +62,23 @@ with st.container():
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
 
-            try:
-                response = requests.get(
-                    "http://localhost:8000/query",
-                    params={
-                        "metadata": "",
-                        "session_id": st.session_state["key"],
-                        "question": user_message,
-                    },
-                ).json()
-            
-            except Exception:
-                response = {"content": "hello"}
+            if st.session_state['authenticated']:
+                try:
+                    response = requests.get(
+                        "http://localhost:8000/query",
+                        params={
+                            "metadata": "",
+                            "session_id": st.session_state["key"],
+                            "question": user_message,
+                        },
+                    ).json()
+                
+                except Exception:
+                    response = {"content": "hello"}
 
-            assistant_response = response["content"]
+                assistant_response = response["content"]
+            else:
+                assistant_response = "*Incorrect Passcode. Query Ignored.*"
 
             message_placeholder.markdown(assistant_response)
             # Add assistant response to chat history
