@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'assistantadv'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6A7F6FAA9315433FB0A54C7374EC8CB4 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_0C5A50D105864A63AEC7B32F88BF1913 }}
