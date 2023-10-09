@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+MESSAGE_ENDPOINT = os.getenv("MESSAGE_ENDPOINT")
+
 st.title("VZ Assistant")
 st.session_state["authenticated"] = False
 
@@ -64,19 +66,19 @@ with st.container():
 
             if st.session_state['authenticated']:
                 try:
-                    response = requests.get(
-                        "http://localhost:8000/query",
-                        params={
+                    response = requests.post(
+                        MESSAGE_ENDPOINT,
+                        json={
                             "metadata": "",
                             "session_id": st.session_state["key"],
                             "question": user_message,
                         },
                     ).json()
                 
-                except Exception:
-                    response = {"content": "hello"}
+                except Exception as e:
+                    response = {"messages": f"Error: {str(e)}"}
 
-                assistant_response = response["content"]
+                assistant_response = response["messages"][0]
             else:
                 assistant_response = "*Incorrect Passcode. Query Ignored.*"
 
