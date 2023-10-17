@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 MESSAGE_ENDPOINT = os.getenv("MESSAGE_ENDPOINT")
+SUBMIT_FEEDBACK_ENDPOINT = os.getenv("SUBMIT_FEEDBACK_ENDPOINT")
+VZ_API_KEY = os.getenv("VZ_API_KEY")
+
 
 st.title("VZ Assistant")
 st.session_state["authenticated"] = False
@@ -30,19 +33,47 @@ if passcode == os.getenv("PASSCODE"):
     st.session_state["authenticated"] = True
 
 with st.expander("Feedback"):
+
+    feedback_choices = {":heavy_minus_sign:": 0, ":thumbsup:": 1, ":thumbsdown:": -1}
+
     thumbs = st.radio(
         "Feedback thumbs up/down",
-        [":heavy_minus_sign:", ":thumbsup:", ":thumbsdown:"],
+        options=[":heavy_minus_sign:", ":thumbsup:", ":thumbsdown:"],
         captions = ["Neutral", "Acceptable", "Not acceptable"], 
         horizontal=True, 
         label_visibility="hidden")
 
     feedback_text = st.text_input("Feedback")
 
+    feedback_value = feedback_choices[thumbs]
+
+    submit_feedback = None
+
     if st.session_state['authenticated']:
-        st.button("Submit feedback")
+        submit_feedback = st.button("Submit feedback")
     else:
         st.button("Submit feedback", disabled=True)
+
+    if submit_feedback:
+        try:
+            response = requests.post(
+                SUBMIT_FEEDBACK_ENDPOINT,
+                headers={
+                    "session-id": st.session_state["key"],
+                    "X-API-Key": VZ_API_KEY
+                },
+                json={
+                    "rating": feedback_value,
+                    "comment": feedback_text,
+                },
+            ).json()
+
+            if response["status"] == "success":
+                st.write("Feedback sent!")
+        
+        except Exception as e:
+            response = {"status": f"Error: {str(e)}"}
+
 
 # Messages container
 with st.container():
@@ -68,17 +99,20 @@ with st.container():
                 try:
                     response = requests.post(
                         MESSAGE_ENDPOINT,
+                        headers={
+                            "session-id": st.session_state["key"],
+                            "X-API-Key": VZ_API_KEY
+                        },
                         json={
-                            "metadata": "",
-                            "session_id": st.session_state["key"],
                             "question": user_message,
                         },
                     ).json()
-                
-                except Exception as e:
-                    response = {"messages": f"Error: {str(e)}"}
 
-                assistant_response = response["messages"][0]
+                    assistant_response = response["messages"][0]
+
+                except Exception as e:
+                    response = {"status": f"Error: {str(e)}"}
+
             else:
                 assistant_response = "*Incorrect Passcode. Query Ignored.*"
 
