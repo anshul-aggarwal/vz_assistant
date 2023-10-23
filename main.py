@@ -84,7 +84,7 @@ with st.container():
             st.markdown(message["message"])
 
     # Accept user input
-    if user_message := st.chat_input():
+    if user_message := st.chat_input(max_chars=1000):
         # Add user message to chat history
 
         # Display user message in chat message container
